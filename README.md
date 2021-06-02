@@ -46,6 +46,9 @@ Connection: Keep-Alive"""
 print(parse_request(request))
 ```
 
+## Documentation
+You can find the docs (here)[https://pjono.tk]
+
 ## Contributing
 1. Fork the project
 2. Create your Feature Branch: `git checkout -b feature/{feature}`
