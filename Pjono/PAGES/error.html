@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Error</title>
+    <style>
+        .error{
+            font-family: consolas;
+            font-weight: 300;
+            font-size: 30px;
+        }
+        .error-block{
+            width: auto;
+            background-color: rgb(37, 37, 37);
+            color: rgb(233, 233, 233);
+            border-radius: 4px;
+            border: 1.7px solid rgb(17, 17, 17);
+            padding: 8px;
+        }
+        .copy{
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-block">
+        <h1 class="error" id="error">{{-error-}}</h1>
+    </div>
+    <button class="copy" onclick="CopyError()">copy</button>
+    <script>
+        // Copy Error
+        function CopyError() {
+            var text = document.getElementById("error").innerText;
+            var elem = document.createElement("textarea");
+            document.body.appendChild(elem);
+            elem.value = text;
+            elem.select();
+            document.execCommand("copy");
+            document.body.removeChild(elem);
+            var txt = document.createElement("p")
+            document.body.appendChild(txt)
+            txt.innerText = "Copied!"
+        }
+    </script>
+</body>
+</html>
