@@ -47,7 +47,7 @@ print(parse_request(request))
 ```
 
 ## Documentation
-You can find the docs (here)[https://pjono.tk]
+You can find the docs [here](https://pjono.tk)
 
 ## Contributing
 1. Fork the project
