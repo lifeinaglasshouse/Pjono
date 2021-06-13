@@ -1,8 +1,10 @@
 
 class HTML():
-    
-    def __init__(self, html_file: str, property: dict=None):
+    """
+    For opening and edit html
+    """
+    def __init__(self, html_file: str, pro: dict=None):
         self.content = open(html_file, "r", encoding="utf-8").read()
-        if property:
-            for i, v in property.items():
+        if pro:
+            for i, v in pro.items():
                 self.content = self.content.replace(i, v)

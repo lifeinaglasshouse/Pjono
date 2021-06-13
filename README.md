@@ -10,8 +10,6 @@ There are many Python web frameworks and some of them are better than Pjono. The
 - To understanding how Http work
 - Learn about Python much deeper
 
-**This is the Pjono first version, not recommend to use in big project because of bugs**
-
 **Built with:**
 - Socket
 
@@ -33,7 +31,7 @@ app.launch()
 ```
 You can also use it to parse http request
 ```py
-from Pjono.PARSE.parse import parse_request
+from Pjono.PARSE import parse_request
 
 request = """\
 GET /index.html HTTP/1.1
@@ -46,9 +44,6 @@ Connection: Keep-Alive"""
 print(parse_request(request))
 ```
 
-## Documentation
-You can find the docs [here](https://pjono.tk)
-
 ## Contributing
 1. Fork the project
 2. Create your Feature Branch: `git checkout -b feature/{feature}`
@@ -59,3 +54,8 @@ You can find the docs [here](https://pjono.tk)
 ## License
 
 Distributed under the **MIT License**. See `LICENSE` for more information
+
+## Quick Link
+
+- [Official Website](https://pjono.tk)
+- [Github](https://github.com/Xp-op/Pjono)
