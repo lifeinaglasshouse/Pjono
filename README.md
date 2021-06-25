@@ -55,3 +55,4 @@ Distributed under the **MIT License**. See `LICENSE` for more information
 
 - [Official Website](https://pjono.tk)(Down)
 - [Github](https://github.com/Xp-op/Pjono)
+- [Docs](https://github.com/Xp-op/Pjono/wiki/Documention)
