@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="Pjono",
-    version="0.0.2",
+    version="0.0.3",
     author="Xp-op",
     author_email="muhammad184276@gmail.com",
     description="a Web Framework made by Xp-op",

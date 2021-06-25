@@ -1,11 +1,19 @@
 import socket
-from typing import Union
-from Pjono.PARSE.parse import parse_request, parse_br, parse_dynamic_url
+from typing import Type
+from Pjono.PARSE.parse import parse_request, parse_br
 from Pjono.Response import Http_File, Http_Response
 import traceback
 import datetime
 import os
 import json
+import threading, keyboard
+import time
+
+def handler_keyboardInterupt(hotkey: str):
+    while True:
+        if keyboard.is_pressed(hotkey):
+            print("\nClosing Server")
+            os._exit(0)
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -44,7 +52,7 @@ class PjonoApp():
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind(server)
 
-    def register(self, location: str):
+    def register(self, location: str, *variables: str):
         """
         (This is decorator function)
         Register a server location:
@@ -64,7 +72,7 @@ class PjonoApp():
         - Param: dict
         """
         def decorator(func):
-            self.pages[location] = func
+            self.pages[location] = func, variables
         return decorator
 
     def add_file(self, location: str, file: Http_File):
@@ -86,14 +94,12 @@ class PjonoApp():
             content_type = _check_content_type(only_type)
             for file in fp:
                 if file.endswith(f".{only_type}"):
-                    path = self.add_file("/" + file, Http_File(file, content_type))
-                    _fp.append(path)
+                    _fp.append(self.add_file("/" + file, Http_File(file, content_type)))
         else:
             for file in fp:
-                path = self.add_file("/" + file, Http_File(file, _check_content_type(file.split(".")[1])))
-                _fp.append(path)
+                _fp.append(self.add_file("/" + file, Http_File(file, _check_content_type(file.split(".")[1]))))
         return tuple(_fp)
-
+    
     def remove_files(self, paths):
         """
         Remove file from specific path
@@ -118,63 +124,83 @@ class PjonoApp():
                     _path = path[1:]
                 self.add_file(path, Http_File(_path, _check_content_type(_path[_path.index(".")+1:])))
     
-    def launch(self, debug: bool=False):
+    def _get_time(self):
+        time = datetime.datetime.now()
+        return f"[{time.hour}:{time.minute}:{time.second}]"
+    
+    def _translate_var_url(self, url: str):
+        for location in self.pages.keys():
+            if url.startswith(location):
+                if isinstance(self.pages[location], tuple):
+                    arg = url.replace(location, "").split("/")[1:]
+                    ind = self.pages[location][1]
+                    return location, {ind[i]:arg[i] for i in range(len(ind))}
+        return None
+
+    def handle_client(self, conn, addr, debug):
         """
-        This is the main function for launching the server.
-        
-        if debug is true, it will show an error in the page if the server get any error even if you have register
-        `ERROR` page.
+        Coroutine function for handling client
         """
+        try:
+            json = parse_request(http_request=conn.recv(1024).decode())
+            if json:
+                json["Variables"] = {}
+                if json["Page"] in self.pages:
+                    respond = self.pages[json["Page"]](json) if not isinstance(self.pages[json["Page"]], tuple) else self.pages[json["Page"]][0](json)
+                    respond = Http_Response(content=respond) if not isinstance(respond, Http_Response) else respond
+                    print(f"{self._get_time()} {addr[0]} Requested[{json['Method']}] {json['Page']} | ({respond.status_code[0]}|{respond.status_code[1]})")
+                else:
+                    try:
+                        loc, vr = self._translate_var_url(json["Page"])
+                    except TypeError:
+                        loc = None
+                    if loc:
+                        json["Variables"] = vr
+                        respond = self.pages[loc][0](json)
+                        respond = Http_Response(content=respond) if not isinstance(respond, Http_Response) else respond
+                        print(f"{self._get_time()} {addr[0]} Requested[{json['Method']}] {json['Page']} | ({respond.status_code[0]}|{respond.status_code[1]})")
+                    else:
+                        if "404" in self.pages:
+                            respond = self.pages["404"](json) if not isinstance(self.pages["404"], tuple) else self.pages["404"][0](json)
+                            respond = Http_Response(content=respond, status_code=(404, "Not Found")) if not isinstance(respond, Http_Response) else respond
+                        else:
+                            respond = Http_Response(status_code=(404, "Not Found"), content=open(os.path.join(__location__, "PAGES/404.html"), "r").read())
+                        print(f"{self._get_time()} {addr[0]} Requested[{json['Method']}] {json['Page']} | ({respond.status_code[0]}|{respond.status_code[1]})")
+            else:
+                return
+            conn.sendall(respond.respond if isinstance(respond.respond, bytes) else respond.respond.encode())
+            conn.close()
+        except Exception as Error:
+            e = traceback.format_exc()
+            print(e)
+            if debug:
+                html = open(os.path.join(__location__, "PAGES/error.html"), "r", encoding="utf-8").read().replace("{{-error-}}", parse_br(e))
+                respond = Http_Response(status_code=(500, "Server Error"), content=html)
+            else:
+                if "ERROR" in self.pages:
+                    respond = self.pages["ERROR"](json, Error) if not isinstance(self.pages[json["ERROR"]], tuple) else self.pages["ERROR"][0](json)
+                    respond = Http_Response(content=respond) if not isinstance(respond, Http_Response) else respond
+                else:
+                    html = open(os.path.join(__location__, "PAGES/error1.html"), "r").read()
+                    respond = Http_Response(status_code=(500, "Server Error"), content=html)
+            conn.sendall(respond.respond if isinstance(respond.respond, bytes) else respond.respond.encode()) 
+            conn.close()
+    
+    def launch(self, debug: bool=False, end_hotkey=["ctrl","alt","c"], sleep: float=0.2):
+        """
+        launching the server. if debug true, it will display the error in the page. sleep is for
+        how long the server should sleep after create a new thread for handling client. If sleep argument set
+        to `0.0`, the cpu usage may be high. Recommended to set it as default. end_hotkey is for which hotkey should end
+        the server.
+        """
+        times = datetime.datetime.now()
         print(f"• Server live on {self.host}")
-        print(f"• Debug {debug}")
-        print(f"• Server live since {datetime.datetime.now()}")
+        print(f"• Debug: {debug}")
+        print(f"• Server live since [{times.day}/{times.month}/{times.year}|{times.hour}:{times.minute}:{times.second}]")
+        print(f"Press {'+'.join(end_hotkey).upper()} to end the server")
+        threading.Thread(target=handler_keyboardInterupt, args=("+".join(end_hotkey),)).start() # Listen to "end_hotkey" hotkey
         self.server.listen(1)
         while True:
             conn, addr = self.server.accept()
-            http = conn.recv(1024)
-            try:
-                json = parse_request(http_request=http.decode())
-                if json:
-                    if json["Page"] in self.pages:
-                        page = self.pages[json["Page"]]
-                        respond = self.pages[json["Page"]](json)
-                        print(f"{addr[0]} Requested {json['Page']} - {datetime.datetime.now()}")
-                    else:
-                        if "404" in self.pages:
-                            page = self.pages["404"]
-                            respond = page(json)
-                        else:
-                            html = open(os.path.join(__location__, "PAGES/404.html"), "r").read()
-                            respond = Http_Response(status_code=(404, "Not Found"), headers={"CONTENT":html})
-                        print(f"{addr[0]} Requested {json['Page']} but didn't exist - {datetime.datetime.now()}")
-                else:
-                    continue
-                if isinstance(respond, str):
-                    conn.sendall(Http_Response({
-                        "CONTENT": respond
-                    }).respond.encode())
-                elif isinstance(respond, bytes):
-                    conn.sendall(Http_Response({
-                        "CONTENT": respond
-                    }).respond)
-                elif hasattr(respond, "respond"):
-                    if isinstance(respond.respond, bytes):
-                        conn.sendall(respond.respond)
-                    else:
-                        conn.sendall(respond.respond.encode())
-                conn.close()
-            except Exception as Error:
-                e = traceback.format_exc()
-                print(e)
-                if debug:
-                    html = open(os.path.join(__location__, "PAGES/error.html"), "r").read().replace("{{-error-}}", parse_br(e))
-                    respond = Http_Response(status_code=(500, "Server Error"), headers={"CONTENT":html})
-                else:
-                    if "ERROR" in self.pages:
-                        page = self.pages["ERROR"]
-                        respond = page(json, Error)
-                    else:
-                        html = open(os.path.join(__location__, "PAGES/error1.html"), "r").read()
-                        respond = Http_Response(status_code=(500, "Server Error"), headers={"CONTENT":html})
-                conn.sendall(respond.respond.encode())
-                conn.close()
+            threading.Thread(target=self.handle_client, args=(conn, addr, debug)).start() # create new thread to handle client
+            time.sleep(sleep) # To reduce cpu usage(its not always going to work but still gonna use it)

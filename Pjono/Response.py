@@ -1,4 +1,4 @@
-from Pjono.PARSE.html import HTML
+from Pjono.PARSE import HTML
 import os
 import json
 
@@ -11,21 +11,20 @@ class Http_Response():
     
     `respond` attributes have the raw http response
     """
-    def __init__(self, headers: dict, HTTP: str="HTTP/1.1", status_code=(200, "OK")):
+    def __init__(self, headers: dict={"Connection":"Closed","Content-Type":"text/html"}, content=None, HTTP: str="HTTP/1.1", status_code=(200, "OK")):
         self.respond = f"{HTTP} {status_code[0]} {status_code[1]}"
-        if "CONTENT" in headers.keys():
-            content = headers["CONTENT"]
-            if type(content) == HTML:
+        self.status_code = status_code
+        if content:
+            if isinstance(content, HTML):
                 content = content.content
-            headers.pop("CONTENT")
             for i, v in headers.items():
-                self.respond = self.respond + f"\n{i}: {v}"
+                self.respond += f"\n{i}: {v}"
             self.respond = f"{self.respond}\n\n"
             if type(content) == bytes:
                 self.respond = self.respond.encode()
                 self.respond += bytearray(content)
             else:
-                self.respond = self.respond + content
+                self.respond += content
         else:
             for i, v in headers.items():
                 self.respond = self.respond + f"\n{i}: {v}"
@@ -41,7 +40,6 @@ class Http_File(Http_Response):
         except UnicodeDecodeError:
             self.content = open(path, "rb").read()
         if headers:
-            headers["CONTENT"] = self.content
             headers["Content-Type"] = content_type 
         else:
             headers = {
@@ -53,7 +51,7 @@ class Http_File(Http_Response):
                 headers["Content-Disposition"] = f"attachment; filename={filename}"
             else:
                 headers["Content-Disposition"] = f"attachment"
-        super().__init__(headers)
+        super().__init__(headers, content=self.content)
 
 class StatusCodeError(Exception):
     pass
@@ -64,7 +62,7 @@ class Http_Redirect(Http_Response):
     """
     def __init__(self, Location: str, status_code=(302, "Found"), **params):
         self.location = Location
-        if status_code > 399 or status_code < 300:
+        if status_code[0] > 399 or status_code[0] < 300:
             raise StatusCodeError("Status code can't be lower or higher than 300")
         if params:
             self.location += "?"

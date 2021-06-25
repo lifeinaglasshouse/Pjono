@@ -36,10 +36,9 @@ def parse_request(http_request: str):
     try:
         r = request[0].split(" ")
     except IndexError:
-        pass
+        pass # this error randomly come # Don't know why
     else:
-        json["Method"] = r[0]
-        json["Http"] = r[2]
+        json["Method"], json["Http"] = r[0], r[2]
         if "?" in r[1]:
             res = parse_dynamic_url(r[1])
             json["Page"] = res["Origin"]
@@ -53,8 +52,14 @@ def parse_request(http_request: str):
                 r = line.split(": ", 1)
                 json["Headers"][r[0]] = r[1]
             elif "=" in line:
-                r = line.split("=", 1)
-                json["Form"][r[0]] = parse_http_encoding(r[1])
+                if "&" in line:
+                    r = line.split("&")
+                    for i in r:
+                        v = i.split("=", 1)
+                        json["Form"][v[0]] = parse_http_encoding(v[1])
+                else:
+                    r = line.split("=", 1)
+                    json["Form"][r[0]] = parse_http_encoding(r[1])
         return json
 
 def parse_br(text: str):
@@ -62,6 +67,12 @@ def parse_br(text: str):
     parse_br will replace \\n with br
     """
     return text.replace("\n", "<br>")
+
+def _until_char(string: str, char: str):
+    for c in string:
+        if c == char:
+            return True
+    return False
 
 def parse_dynamic_url(url: str):
     """
@@ -77,25 +88,32 @@ def parse_dynamic_url(url: str):
     
     Will return `None` if the url given isn't dynamic url
     """
-    url1 = url.split("/")
-    last_index = len(url1) - 1
-    url2 = url1[last_index]
-    if "?" not in url2:
+    url2 = url.split("/")[-1]
+    if not _until_char(url2, "?"):
         return None
+    form = url.split("?")
     result = {
-        "Origin": url.split("?")[0],
+        "Origin": form[0],
         "Param": {}
         }
-    url2 = url2.split("?")[1]
+    url2 = form[1]
     try:
         for param in url2.split("&"):
-            pa = param.split("=")
-            result["Param"][pa[0]] = parse_http_encoding(pa[1])
+            param = param.split("=")
+            parsed_text = parse_http_encoding(param[1])
+            try:
+                result["Param"][param[0]] = int(parsed_text) if parsed_text.isdigit() else float(parsed_text)
+            except ValueError:
+                result["Param"][param[0]] = parsed_text
     except IndexError:
         pass
     return result
 
 def parse_http_encoding(text: str):
+    """
+    This is for parsing http encoding
+    Example: `Hello World!` = `Hello+World%21`
+    """
     res = text
     res = res.replace("+", " ")
     for k, v in __ascii__.items():

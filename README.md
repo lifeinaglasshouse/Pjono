@@ -5,10 +5,8 @@
 
 ## About the project:
 
-There are many Python web frameworks and some of them are better than Pjono. The reasons I made Pjono is because:
-
-- To understanding how Http work
-- Learn about Python much deeper
+a framework for making a webserver. You can also use it to build
+user interface with `Components.py`
 
 **Built with:**
 - Socket
@@ -23,9 +21,7 @@ app.add_file("/style.css", Http_File("style.css", "text/css"))
 
 @app.register("/")
 def index(request):
-    return Http_Response(response_headers={
-        "CONTENT": HTML("index.html").content
-    })
+    return Http_Response(content=HTML("index.html"))
 
 app.launch()
 ```
