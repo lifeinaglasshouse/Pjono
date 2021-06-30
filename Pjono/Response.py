@@ -27,7 +27,12 @@ class Http_Response():
                 self.respond += content
         else:
             for i, v in headers.items():
-                self.respond = self.respond + f"\n{i}: {v}"
+                if isinstance(v, list):
+                    if i == "Set-Cookie":
+                        for cookie in v:
+                            self.respond += f"\n{i}: {cookie}"
+                else:
+                    self.respond += f"\n{i}: {v}"
 
 class Http_File(Http_Response):
     """
@@ -40,10 +45,9 @@ class Http_File(Http_Response):
         except UnicodeDecodeError:
             self.content = open(path, "rb").read()
         if headers:
-            headers["Content-Type"] = content_type 
+            headers["Content-Type"] = content_type
         else:
             headers = {
-                "CONTENT": self.content,
                 "Content-Type": content_type
             }
         if attachment:
@@ -60,7 +64,7 @@ class Http_Redirect(Http_Response):
     """
     Redirecting client to specific url with parameters or not
     """
-    def __init__(self, Location: str, status_code=(302, "Found"), **params):
+    def __init__(self, Location: str, headers: dict={}, status_code=(302, "Found"), HTTP: str="HTTP/1.1", **params):
         self.location = Location
         if status_code[0] > 399 or status_code[0] < 300:
             raise StatusCodeError("Status code can't be lower or higher than 300")
@@ -68,11 +72,13 @@ class Http_Redirect(Http_Response):
             self.location += "?"
             for k, v in params.items():
                 value = v.replace(" ", "+")
+                ascii_char = list("qwertyuiopasdfghjklzxcvbnm+.0987654321")
                 for hex, char in __ascii__.items():
-                    if char.lower() in list("qwertyuiopasdfghjklzxcvbnm+.0987654321"):
+                    if char.lower() in ascii_char:
                         continue
                     value = value.replace(char, hex)
                 self.location += f"{k}={value}"
                 if not list(params).index(k) >= len(params) - 1:
                     self.location += "&"
-        super().__init__({"Location":self.location}, status_code=status_code)
+        super().__init__({**headers,"Location":self.location}, HTTP=HTTP, status_code=status_code)
+        

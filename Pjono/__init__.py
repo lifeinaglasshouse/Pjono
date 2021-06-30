@@ -19,6 +19,8 @@ Changelog:
     - The code will run faster
         - List comprehension
         - one line if statement
+- 0.0.4
+    
 """
 
 __version__ = "0.0.3"
@@ -26,5 +28,7 @@ __author__ = "Xp-op <muhammad184276@gmail.com>"
 
 from Pjono.Server import PjonoApp
 from Pjono.Response import *
+from Pjono.Cookie import *
 from Pjono.PARSE import HTML
 from Pjono.PARSE import Component, HtComponents
+from Pjono.Signal import *

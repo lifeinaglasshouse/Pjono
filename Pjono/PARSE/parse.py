@@ -6,7 +6,7 @@ __ascii__ = json.load(open(os.path.join(__location__, "ascii.json"), "r"))
 
 def parse_request(http_request: str):
     """
-    This function is for parsing the http request:
+    This function is for parsing a http request:
     
     Example http request:\n
     ```
