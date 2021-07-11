@@ -6,6 +6,7 @@
     <img src="https://img.shields.io/static/v1?label=contributors&message=1&color=green&style=for-the-badge" alt="contributors">
     <img src="https://img.shields.io/static/v1?label=Forks&message=0&color=light-blue&style=for-the-badge" alt="Fork">
     <img src="https://img.shields.io/static/v1?label=Issues&message=0&color=red&style=for-the-badge" alt="Issues">
+    <a href="https://open.vscode.dev/Xp-op/Pjono"><img src="https://open.vscode.dev/badges/open-in-vscode.svg" alt="Open In Visual Studio Code"></a>
     <h2>A Python Web Framework Built With Socket</h2>
     <h3>High Performance • Light Weight • Not really</h3>
     <br>
