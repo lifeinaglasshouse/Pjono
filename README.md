@@ -17,9 +17,9 @@
 ## About
 Pjono is a framework for creating web server, api, and any other thing that it can do.
 
-The reason I used Socket is that I really like Socket and it much easier to used.
+The reason I used Socket is that I really like Socket and it much easier to use.
 
-Making the server receiving and sending data is easy but parsing Http Request and creating Http Response are quite a bit tricky since I don't have people that can help me. I also try to add new feature for building User Interface and I had to use Third Party Library(bs4) for parsing html code. This project made me understand how HTTP actually work. Really glad that I can finish this.
+Making the server receiving and sending data is easy but parsing Http Request and creating Http Response are quite a bit tricky since I don't have any helper. I also try to add new feature for building User Interface and I had to use Third Party Library (bs4) for parsing HTML code. This project made me understand how HTTP actually work. Really glad that I can finish this.
 
 ## Features
 - Components
